@@ -61,7 +61,7 @@ public class awsTest {
             System.out.println("  7. reboot instance              8. list images            ");
             System.out.println("                                 99. quit                   ");
             System.out.println("                                 10. terminate instance     ");
-            System.out.println("                                 12. monitoring instance    ");
+            System.out.println(" 11. describe instance           12. monitoring instance    ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -142,6 +142,9 @@ public class awsTest {
 
                     if(!instance_id.isBlank())
                         terminateInstances(instance_id);
+                    break;
+                case 11:
+                    decribeInstances();
                     break;
                 case 12:
                     System.out.print("Enter instance id: ");
@@ -390,6 +393,39 @@ public class awsTest {
         } catch(Exception e)
         {
             System.out.println("Exception: "+e.toString());
+        }
+    }
+
+    public static void decribeInstances()
+    {
+        final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+        boolean done = false;
+
+        DescribeInstancesRequest request = new DescribeInstancesRequest();
+        while(!done) {
+            DescribeInstancesResult response = ec2.describeInstances(request);
+
+            for(Reservation reservation : response.getReservations()) {
+                for(Instance instance : reservation.getInstances()) {
+                    System.out.printf(
+                            "\nFound instance with id : %s\n" +
+                                    "AMI: %s\n" +
+                                    "type: %s\n" +
+                                    "state: %s\n" +
+                                    "monitoring state:%s\n",
+                            instance.getInstanceId(),
+                            instance.getImageId(),
+                            instance.getInstanceType(),
+                            instance.getState().getName(),
+                            instance.getMonitoring().getState());
+                }
+            }
+
+            request.setNextToken(response.getNextToken());
+
+            if(response.getNextToken() == null) {
+                done = true;
+            }
         }
     }
 
