@@ -9,32 +9,14 @@ package aws;
  */
 // Cloud_Computing_project_2016039082
 import java.util.Iterator;
+import java.util.List;
 import java.util.Scanner;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesResult;
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.Reservation;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeRegionsResult;
-import com.amazonaws.services.ec2.model.Region;
-import com.amazonaws.services.ec2.model.AvailabilityZone;
-import com.amazonaws.services.ec2.model.DryRunSupportedRequest;
-import com.amazonaws.services.ec2.model.StopInstancesRequest;
-import com.amazonaws.services.ec2.model.StartInstancesRequest;
-import com.amazonaws.services.ec2.model.InstanceType;
-import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.ec2.model.RunInstancesResult;
-import com.amazonaws.services.ec2.model.RebootInstancesRequest;
-import com.amazonaws.services.ec2.model.RebootInstancesResult;
-import com.amazonaws.services.ec2.model.DescribeImagesRequest;
-import com.amazonaws.services.ec2.model.DescribeImagesResult;
-import com.amazonaws.services.ec2.model.Image;
-import com.amazonaws.services.ec2.model.Filter;
+import com.amazonaws.services.ec2.model.*;
 
 public class awsTest {
 
@@ -78,6 +60,7 @@ public class awsTest {
             System.out.println("  5. stop instance                6. create instance        ");
             System.out.println("  7. reboot instance              8. list images            ");
             System.out.println("                                 99. quit                   ");
+            System.out.println("                                 10. terminate instance     ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -151,6 +134,14 @@ public class awsTest {
                     menu.close();
                     id_string.close();
                     return;
+                case 10:
+                    System.out.print("Enter instance id: ");
+                    if(id_string.hasNext())
+                        instance_id = id_string.nextLine();
+
+                    if(!instance_id.isBlank())
+                        terminateInstances(instance_id);
+                    break;
                 default: System.out.println("concentration!");
             }
 
@@ -343,4 +334,33 @@ public class awsTest {
         }
 
     }
+    public static void terminateInstances(String instance_id)
+    {
+        final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+
+        DryRunSupportedRequest<TerminateInstancesRequest> dry_request =
+                () -> {
+                    TerminateInstancesRequest request = new TerminateInstancesRequest()
+                            .withInstanceIds(instance_id);
+
+                    return request.getDryRunRequest();
+                };
+
+        try {
+            TerminateInstancesRequest request = new TerminateInstancesRequest()
+                    .withInstanceIds(instance_id);
+
+            ec2.terminateInstances(request);
+            System.out.printf("Successfully terminate instance %s\n", instance_id);
+
+        } catch(Exception e)
+        {
+            System.out.println("Exception: "+e.toString());
+        }
+
+    }
+
+
+
+
 }
