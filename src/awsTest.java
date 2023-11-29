@@ -61,6 +61,7 @@ public class awsTest {
             System.out.println("  7. reboot instance              8. list images            ");
             System.out.println("                                 99. quit                   ");
             System.out.println("                                 10. terminate instance     ");
+            System.out.println("                                 12. monitoring instance    ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -141,6 +142,14 @@ public class awsTest {
 
                     if(!instance_id.isBlank())
                         terminateInstances(instance_id);
+                    break;
+                case 12:
+                    System.out.print("Enter instance id: ");
+                    if(id_string.hasNext())
+                        instance_id = id_string.nextLine();
+
+                    if(!instance_id.isBlank())
+                        monitorInstances(instance_id);
                     break;
                 default: System.out.println("concentration!");
             }
@@ -357,9 +366,32 @@ public class awsTest {
         {
             System.out.println("Exception: "+e.toString());
         }
-
     }
 
+    public static void monitorInstances(String instance_id)
+    {
+        final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+
+        DryRunSupportedRequest<MonitorInstancesRequest> dry_request =
+                () -> {
+                    MonitorInstancesRequest request = new MonitorInstancesRequest()
+                            .withInstanceIds(instance_id);
+
+                    return request.getDryRunRequest();
+                };
+
+        try {
+            MonitorInstancesRequest request = new MonitorInstancesRequest()
+                    .withInstanceIds(instance_id);
+
+            ec2.monitorInstances(request);
+            System.out.printf("Successfully monitoring instance %s\n", instance_id);
+
+        } catch(Exception e)
+        {
+            System.out.println("Exception: "+e.toString());
+        }
+    }
 
 
 
