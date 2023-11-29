@@ -8,6 +8,7 @@ package aws;
  *
  */
 // Cloud_Computing_project_2016039082
+import java.sql.SQLOutput;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
@@ -62,6 +63,7 @@ public class awsTest {
             System.out.println("                                 99. quit                   ");
             System.out.println("                                 10. terminate instance     ");
             System.out.println(" 11. describe instance           12. monitoring instance    ");
+            System.out.println(" 13. stop monitoring                                        ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -153,6 +155,9 @@ public class awsTest {
 
                     if(!instance_id.isBlank())
                         monitorInstances(instance_id);
+                    break;
+                case 13:
+                    stopMonitoring();
                     break;
                 default: System.out.println("concentration!");
             }
@@ -429,6 +434,63 @@ public class awsTest {
         }
     }
 
+    public static void stopMonitoring()
+    {
+        Scanner id_string = new Scanner(System.in);
+        String instance_id = "";
+        final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+        boolean done = false;
 
+        DescribeInstancesRequest request = new DescribeInstancesRequest();
+        while(!done) {
+            DescribeInstancesResult response = ec2.describeInstances(request);
+
+            for(Reservation reservation : response.getReservations()) {
+                for(Instance instance : reservation.getInstances()) {
+
+                    if(instance.getMonitoring().getState().equals("enabled")==true)
+                    {
+                        System.out.println("\n-------------Current Monitoring Instances------------");
+                        System.out.printf(
+                                "#Instance id : %s\n" ,
+                                instance.getInstanceId());
+                    }
+                }
+            }
+
+            request.setNextToken(response.getNextToken());
+
+            if(response.getNextToken() == null) {
+                done = true;
+            }
+        }
+        System.out.print("\nEnter instance id for stop Monitoring: ");
+        if(id_string.hasNext())
+            instance_id = id_string.nextLine();
+        if(!instance_id.isBlank())
+        {
+            String finalInstance_id = instance_id;
+            DryRunSupportedRequest<UnmonitorInstancesRequest> dry_request =
+                    () -> {
+                        UnmonitorInstancesRequest unmonitor_request = new UnmonitorInstancesRequest()
+                                .withInstanceIds(finalInstance_id);
+
+                        return unmonitor_request.getDryRunRequest();
+                    };
+
+            try {
+                UnmonitorInstancesRequest unmonitor_request= new UnmonitorInstancesRequest()
+                        .withInstanceIds(instance_id);
+
+                ec2.unmonitorInstances(unmonitor_request);
+                System.out.printf("Successfully stop monitoring instance: %s\n", instance_id);
+
+            } catch(Exception e)
+            {
+                System.out.println("Exception: "+e.toString());
+            }
+        }
+
+    }
 
 }
