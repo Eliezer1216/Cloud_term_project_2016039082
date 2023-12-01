@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Scanner;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
@@ -63,7 +64,7 @@ public class awsTest {
             System.out.println("                                 99. quit                   ");
             System.out.println("                                 10. terminate instance     ");
             System.out.println(" 11. describe instance           12. monitoring instance    ");
-            System.out.println(" 13. stop monitoring                                        ");
+            System.out.println(" 13. stop monitoring             14. Find Running Instance  ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -158,6 +159,9 @@ public class awsTest {
                     break;
                 case 13:
                     stopMonitoring();
+                    break;
+                case 14:
+                    FindRunningInstances(ec2);
                     break;
                 default: System.out.println("concentration!");
             }
@@ -492,5 +496,35 @@ public class awsTest {
         }
 
     }
+
+    public static void FindRunningInstances(AmazonEC2 ec2) {
+        try {
+            // Create the Filter to use to find running instances
+            Filter filter = new Filter("instance-state-name");
+            filter.withValues("running");
+
+            // Create a DescribeInstancesRequest
+            DescribeInstancesRequest request = new DescribeInstancesRequest();
+            request.withFilters(filter);
+
+            // Find the running instances
+            DescribeInstancesResult response = ec2.describeInstances(request);
+
+            int count = 1; // 인덱스를 세기 위한 변수
+            System.out.println("\n-----------Running instance Id-----------");
+            for (Reservation reservation : response.getReservations()) {
+                for (Instance instance : reservation.getInstances()) {
+                    System.out.printf("#%d %s\n", count, instance.getInstanceId());
+                    count++; // 다음 인덱스로 증가
+                }
+            }
+            System.out.print("End");
+
+        } catch (SdkClientException e) {
+            e.getStackTrace();
+        }
+    }
+
+
 
 }
