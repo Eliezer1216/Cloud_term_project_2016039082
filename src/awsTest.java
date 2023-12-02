@@ -316,7 +316,8 @@ public class awsTest {
                 .withImageId(ami_id)
                 .withInstanceType(InstanceType.T2Micro)
                 .withMaxCount(1)
-                .withMinCount(1);
+                .withMinCount(1)
+                .withSecurityGroupIds("sg-0e61735b2344da4d9");
 
         RunInstancesResult run_response = ec2.runInstances(run_request);
 
@@ -359,7 +360,7 @@ public class awsTest {
         DescribeImagesRequest request = new DescribeImagesRequest();
         ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
 
-        request.getFilters().add(new Filter().withName("name").withValues("Shinhyo_slave_cloud"));
+        request.getFilters().add(new Filter().withName("name").withValues("Shinhyo_slave"));
         request.setRequestCredentialsProvider(credentialsProvider);
 
         DescribeImagesResult results = ec2.describeImages(request);
@@ -579,5 +580,6 @@ public class awsTest {
             e.printStackTrace();
         }
     }
+
 }
 
