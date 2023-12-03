@@ -76,7 +76,7 @@ public class awsTest {
             System.out.println("  7. reboot instance              8. list images            ");
             System.out.println("  9. condor_status               99. quit                   ");
             System.out.println("                                 10. terminate instance     ");
-            System.out.println(" 11. describe instance           12. monitoring instance    ");
+            System.out.println(" 11. describe instance           12. start monitoring       ");
             System.out.println(" 13. stop monitoring             14. Find Running Instance  ");
             System.out.println("------------------------------------------------------------");
 
@@ -115,7 +115,8 @@ public class awsTest {
                     break;
 
                 case 5:
-                    System.out.print("Enter instance id: ");
+                    FindRunningInstances(ec2);
+                    System.out.print("\n\nEnter instance id: ");
                     if(id_string.hasNext())
                         instance_id = id_string.nextLine();
 
@@ -164,6 +165,7 @@ public class awsTest {
                     id_string.close();
                     return;
                 case 10:
+                    listInstances();
                     System.out.print("Enter instance id: ");
                     if(id_string.hasNext())
                         instance_id = id_string.nextLine();
@@ -175,7 +177,8 @@ public class awsTest {
                     decribeInstances();
                     break;
                 case 12:
-                    System.out.print("Enter instance id: ");
+                    listInstances();
+                    System.out.print("\nEnter instance id: ");
                     if(id_string.hasNext())
                         instance_id = id_string.nextLine();
 
