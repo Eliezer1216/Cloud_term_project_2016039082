@@ -8,20 +8,27 @@ package aws;
  *
  */
 // Cloud_Computing_project_2016039082
-
+import com.amazonaws.services.cloudwatch.model.Dimension;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
+import com.amazonaws.services.cloudwatch.model.Datapoint;
+import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
+import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
+import com.amazonaws.services.costexplorer.AWSCostExplorer;
+import com.amazonaws.services.costexplorer.AWSCostExplorerClientBuilder;
+import com.amazonaws.services.costexplorer.model.*;
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.sql.SQLOutput;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
@@ -29,9 +36,6 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
 
 public class awsTest {
 
@@ -78,6 +82,7 @@ public class awsTest {
             System.out.println("                                 10. terminate instance     ");
             System.out.println(" 11. describe instance           12. start monitoring       ");
             System.out.println(" 13. stop monitoring             14. Find Running Instance  ");
+            System.out.println(" 15. show the bill               16.                        ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -190,6 +195,28 @@ public class awsTest {
                     break;
                 case 14:
                     FindRunningInstances(ec2);
+                    break;
+                case 15:
+                    System.out.println("Please enter the date correctly\nex) 2023-11-01");
+                    System.out.print("\nStart date: ");
+                    String Start_date = "";
+
+                    if(id_string.hasNext())
+                        Start_date = id_string.nextLine();
+
+                    if(!Start_date.isBlank())
+                    {
+                        System.out.println("End date: ");
+                        String End_date="";
+                        if(id_string.hasNext())
+                        {
+                            End_date=id_string.nextLine();
+                        }
+                        if(!End_date.isBlank())
+                            showthebill(Start_date,End_date);
+                    }
+                    break;
+                case 16:
                     break;
                 default: System.out.println("concentration!");
             }
@@ -565,6 +592,35 @@ public class awsTest {
     {
         String command = "condor_status";
         ConnectToEc2(command);
+    }
+
+    public static void showthebill(String Start_date , String End_date) {
+        ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
+        try {
+            credentialsProvider.getCredentials();
+        } catch (Exception e) {
+            throw new AmazonClientException(
+                    "Cannot load the credentials from the credential profiles file. " +
+                            "Please make sure that your credentials file is at the correct " +
+                            "location (~/.aws/credentials), and is in valid format.",
+                    e);
+        }
+        AWSCostExplorer costExplorer = AWSCostExplorerClientBuilder.standard()
+                .withCredentials(credentialsProvider)
+                .withRegion("us-east-2")
+                .build();
+
+        GetCostAndUsageRequest request = new GetCostAndUsageRequest()
+                .withTimePeriod(new DateInterval().withStart(Start_date).withEnd(End_date))
+                .withGranularity("MONTHLY")
+                .withMetrics("BlendedCost");
+
+        GetCostAndUsageResult result = costExplorer.getCostAndUsage(request);
+        System.out.println("\n--------------월별 청구서--------------");
+        for (ResultByTime resultByTime : result.getResultsByTime()) {
+            System.out.println("\n기간: " + resultByTime.getTimePeriod());
+            System.out.println("총 비용: " + resultByTime.getTotal().get("BlendedCost"));
+        }
     }
 
     public static void ConnectToEc2(String command)
