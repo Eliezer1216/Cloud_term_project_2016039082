@@ -526,21 +526,36 @@ public class awsTest {
             // Find the running instances
             DescribeInstancesResult response = ec2.describeInstances(request);
 
+            boolean foundInstances = false;
             int count = 1; // 인덱스를 세기 위한 변수
             System.out.println("\n-----------Running instance Id-----------");
             for (Reservation reservation : response.getReservations()) {
                 for (Instance instance : reservation.getInstances()) {
                     System.out.printf("#%d %s\n", count, instance.getInstanceId());
                     count++; // 다음 인덱스로 증가
+                    foundInstances = true;
                 }
             }
-            System.out.print("End");
+            if(!foundInstances)
+            {
+                System.out.println("There is no running instances");
+            }
+            if(foundInstances)
+            {
+                System.out.print("End");
+            }
 
         } catch (SdkClientException e) {
             e.getStackTrace();
         }
     }
     public static void condor_status()
+    {
+        String command = "condor_status";
+        ConnectToEc2(command);
+    }
+
+    public static void ConnectToEc2(String command)
     {
         String host = "13.58.106.251";
         String user = "ec2-user";
@@ -555,8 +570,6 @@ public class awsTest {
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect();
 
-            // 명령어 실행
-            String command = "condor_status";
             Channel channel = session.openChannel("exec");
             ((ChannelExec) channel).setCommand(command);
 
