@@ -126,11 +126,21 @@ public class awsTest {
                 case 6:
                     System.out.print("Enter ami id: ");
                     String ami_id = "";
+
                     if(id_string.hasNext())
                         ami_id = id_string.nextLine();
 
                     if(!ami_id.isBlank())
-                        createInstance(ami_id);
+                    {
+                        System.out.println("How many instances will you create?: ");
+                        String num="";
+                        if(id_string.hasNext())
+                        {
+                            num=id_string.nextLine();
+                        }
+                        if(!num.isBlank())
+                            createInstance(ami_id,num);
+                    }
                     break;
 
                 case 7:
@@ -309,24 +319,23 @@ public class awsTest {
 
     }
 
-    public static void createInstance(String ami_id) {
+    public static void createInstance(String ami_id, String num) {
         final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
-
+        int numInstances = Integer.parseInt(num);
         RunInstancesRequest run_request = new RunInstancesRequest()
                 .withImageId(ami_id)
                 .withInstanceType(InstanceType.T2Micro)
-                .withMaxCount(1)
-                .withMinCount(1)
+                .withMaxCount(numInstances)
+                .withMinCount(numInstances)
                 .withSecurityGroupIds("sg-0e61735b2344da4d9");
 
         RunInstancesResult run_response = ec2.runInstances(run_request);
 
-        String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
-
-        System.out.printf(
-                "Successfully started EC2 instance %s based on AMI %s",
-                reservation_id, ami_id);
-
+        for (Instance instance : run_response.getReservation().getInstances()) {
+            System.out.printf(
+                    "Successfully started EC2 instance %s based on AMI %s\n",
+                    instance.getInstanceId(), ami_id);
+        }
     }
 
     public static void rebootInstance(String instance_id) {
