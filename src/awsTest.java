@@ -80,8 +80,8 @@ public class awsTest {
             System.out.println(" 11. describe instance           12. start monitoring       ");
             System.out.println(" 13. stop monitoring             14. Find Running Instance  ");
             System.out.println(" 15. show the bill               16. copy file to EC2       ");
-            System.out.println(" 17. ready for condor_submit     18.ready for condor_submit2");
-            System.out.println(" 19. condor_submit               18.ready for condor_submit2");
+            System.out.println(" 17. ready for condor_submit     18.condor_submit           ");
+            System.out.println(" 19. condor_q                                               ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -219,13 +219,31 @@ public class awsTest {
                     copyFileToEc2();
                     break;
                 case 17:
-                    ready_for_condor_submit();
+                    System.out.println("Please enter the txt file path\n(This file will change to shell script)");
+                    System.out.print("\nFile Path: ");
+                    String File_Path1 = "";
+
+                    if(id_string.hasNext())
+                        File_Path1 = id_string.nextLine();
+
+                    if(!File_Path1.isBlank())
+                    {
+                        System.out.println("Please enter the txt file path\n(This file will change to .jds File");
+                        System.out.println("File Path: ");
+                        String File_Path2="";
+                        if(id_string.hasNext())
+                        {
+                            File_Path2=id_string.nextLine();
+                        }
+                        if(!File_Path2.isBlank())
+                            ready_for_condor_submit(File_Path1,File_Path2);
+                    }
                     break;
                 case 18:
-                    ready_for_condor_submit2();
+                    condor_submit();
                     break;
                 case 19:
-                    condor_submit();
+                    condor_q();
                     break;
                 default: System.out.println("concentration!");
             }
@@ -408,7 +426,7 @@ public class awsTest {
         DescribeImagesRequest request = new DescribeImagesRequest();
         ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
 
-        request.getFilters().add(new Filter().withName("name").withValues("Shinhyo_slave"));
+        request.getFilters().add(new Filter().withName("name").withValues("Shinhyo_slave_cloud"));
         request.setRequestCredentialsProvider(credentialsProvider);
 
         DescribeImagesResult results = ec2.describeImages(request);
@@ -609,7 +627,7 @@ public class awsTest {
     }
     public static void condor_submit()
     {
-        String command="condor_submit -allow-crlf-script /home/ec2-user/test/multiple.jds";
+        String command="condor_submit -allow-crlf-script /home/ec2-user/multiple.jds";
         ConnectToEc2(command);
     }
 
@@ -725,15 +743,15 @@ public class awsTest {
             e.printStackTrace();
         }
     }
-
-    public static void ready_for_condor_submit()
+    public static void ready_for_condor_submit(String File_Path1 , String File_Path2)
     {
         String user = "ec2-user";
         String host = "13.58.106.251";
         int port = 22;
         String privateKeyPath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\Cloud_2016039082.pem";
-        String localFilePath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\count.txt"; // 로컬 파일 경로
-        String remoteFilePath = "/home/ec2-user/test/"; // EC2 내 파일 저장 경로
+        String localFilePath1 = File_Path1; // 로컬 파일 경로 ( shell script로 바뀔 )
+        String localFilePath2 = File_Path2; // 로컬 파일 경로 ( jds파일로 바뀔 )
+        String remoteFilePath = "/home/ec2-user/"; // EC2 내 파일 저장 경로
 
         JSch jsch = new JSch();
         Session session = null;
@@ -753,14 +771,37 @@ public class awsTest {
             channelSftp.connect();
 
             // 로컬 파일을 EC2로 전송
-            File localFile = new File(localFilePath);
-            String remoteFileName = localFile.getName();
-            channelSftp.put(new FileInputStream(localFile), remoteFilePath + "/" + remoteFileName);
+            File localFile = new File(localFilePath1);
+            String remoteFileName1 = localFile.getName();
+            int lastIndex = remoteFileName1.lastIndexOf('.');
+            String fileNameWithoutExtension1 = remoteFileName1.substring(0, lastIndex);
+            channelSftp.put(new FileInputStream(localFile), remoteFilePath + "/" + remoteFileName1);
 
             System.out.println("파일 업로드 완료");
 
             // EC2 내 파일을 쉘 스크립트로 변환
-            convertToShellScript(session, remoteFilePath, remoteFileName);
+            convertToShellScript(session, remoteFilePath, remoteFileName1,fileNameWithoutExtension1);
+
+        } catch (JSchException | SftpException | IOException e) {
+            System.err.println("파일 업로드 중 오류 발생: " + e.getMessage());
+        }
+        try {
+
+            // SFTP 채널 열기
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            // 로컬 파일을 EC2로 전송
+            File localFile2 = new File(localFilePath2);
+            String remoteFileName2 = localFile2.getName();
+            int lastIndex = remoteFileName2.lastIndexOf('.');
+            String fileNameWithoutExtension2 = remoteFileName2.substring(0, lastIndex);
+            channelSftp.put(new FileInputStream(localFile2), remoteFilePath + "/" + remoteFileName2);
+
+            System.out.println("파일 업로드 완료");
+
+            // EC2 내 파일을 .jds 파일로 변환
+            convertToJDS(session, remoteFilePath, remoteFileName2,fileNameWithoutExtension2);
 
         } catch (JSchException | SftpException | IOException e) {
             System.err.println("파일 업로드 중 오류 발생: " + e.getMessage());
@@ -775,83 +816,39 @@ public class awsTest {
         }
     }
 
+
     // EC2 내 파일을 쉘 스크립트로 변환하는 메서드
-    public static void convertToShellScript(Session session, String remoteFilePath, String remoteFileName) {
+    public static void convertToShellScript(Session session, String remoteFilePath, String remoteFileName1,String fileNameWithoutExtension1) {
         try {
             ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
-            String command = "cat " + remoteFilePath + "/" + remoteFileName + " > " + remoteFilePath + "/count.sh";
+            String command = "cat " + remoteFilePath + "/" + remoteFileName1 + " > " + remoteFilePath + "/" + fileNameWithoutExtension1 + ".sh; " +
+                    "dos2unix " + remoteFilePath + "/" + fileNameWithoutExtension1 + ".sh; " +
+                    "chmod 777 " + remoteFilePath + "/" + fileNameWithoutExtension1 + ".sh";
             channelExec.setCommand(command);
             channelExec.connect();
             channelExec.disconnect();
-            System.out.println("파일을 쉘 스크립트로 변환 완료");
+            System.out.println("파일을 쉘 스크립트로 변환 완료\n");
         } catch (JSchException e) {
             System.err.println("쉘 스크립트 변환 중 오류 발생: " + e.getMessage());
         }
     }
 
-    public static void ready_for_condor_submit2()
-    {
-        String user = "ec2-user";
-        String host = "13.58.106.251";
-        int port = 22;
-        String privateKeyPath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\Cloud_2016039082.pem";
-        String localFilePath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\multiple.txt"; // 로컬 파일 경로
-        String remoteFilePath = "/home/ec2-user/test/"; // EC2 내 파일 저장 경로
 
-        JSch jsch = new JSch();
-        Session session = null;
-        ChannelSftp channelSftp = null;
-
-        try {
-            // SSH 세션 열기
-            jsch.addIdentity(privateKeyPath);
-            session = jsch.getSession(user, host, 22);
-            Properties config = new Properties();
-            config.put("StrictHostKeyChecking", "no");
-            session.setConfig(config);
-            session.connect();
-
-            // SFTP 채널 열기
-            channelSftp = (ChannelSftp) session.openChannel("sftp");
-            channelSftp.connect();
-
-            // 로컬 파일을 EC2로 전송
-            File localFile = new File(localFilePath);
-            String remoteFileName = localFile.getName();
-            channelSftp.put(new FileInputStream(localFile), remoteFilePath + "/" + remoteFileName);
-
-            System.out.println("파일 업로드 완료");
-
-            // EC2 내 파일을 .jds 파일로 변환
-            convertToJDS(session, remoteFilePath, remoteFileName);
-
-        } catch (JSchException | SftpException | IOException e) {
-            System.err.println("파일 업로드 중 오류 발생: " + e.getMessage());
-        } finally {
-            // 연결 종료
-            if (channelSftp != null) {
-                channelSftp.exit();
-            }
-            if (session != null) {
-                session.disconnect();
-            }
-        }
-    }
 
     // EC2 내 파일을 .jds 파일로 변환하는 메서드
-    public static void convertToJDS(Session session, String remoteFilePath, String remoteFileName) {
+    public static void convertToJDS(Session session, String remoteFilePath, String remoteFileName,String fileNameWithoutExtension2) {
         try {
             ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
-            String command = "mv " + remoteFilePath + "/" + remoteFileName + " " + remoteFilePath + "/multiple.jds";
+            String command = "mv " + remoteFilePath + "/" + remoteFileName + " " + remoteFilePath + "/"+fileNameWithoutExtension2+".jds";
             channelExec.setCommand(command);
+         /*   String command2="dos2unix"+" " + remoteFilePath + "/"+fileNameWithoutExtension2+".jds";
+            channelExec.setCommand(command2);*/
             channelExec.connect();
             channelExec.disconnect();
-            System.out.println("파일을 .jds로 변환 완료");
+            System.out.println("파일을 .jds로 변환 완료\n");
         } catch (JSchException e) {
             System.err.println(".jds 파일로 변환 중 오류 발생: " + e.getMessage());
         }
     }
-
-
 }
 
