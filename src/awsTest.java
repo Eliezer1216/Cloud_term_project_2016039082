@@ -79,8 +79,9 @@ public class awsTest {
             System.out.println("                                 10. terminate instance     ");
             System.out.println(" 11. describe instance           12. start monitoring       ");
             System.out.println(" 13. stop monitoring             14. Find Running Instance  ");
-            System.out.println(" 15. show the bill               16. copy File to ec2       ");
-            System.out.println(" 17. condor_q                                               ");
+            System.out.println(" 15. show the bill               16. copy file to EC2       ");
+            System.out.println(" 17. ready for condor_submit     18.ready for condor_submit2");
+            System.out.println(" 19. condor_submit               18.ready for condor_submit2");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -218,7 +219,13 @@ public class awsTest {
                     copyFileToEc2();
                     break;
                 case 17:
-                    condor_q();
+                    ready_for_condor_submit();
+                    break;
+                case 18:
+                    ready_for_condor_submit2();
+                    break;
+                case 19:
+                    condor_submit();
                     break;
                 default: System.out.println("concentration!");
             }
@@ -600,6 +607,11 @@ public class awsTest {
         String command = "condor_q";
         ConnectToEc2(command);
     }
+    public static void condor_submit()
+    {
+        String command="condor_submit -allow-crlf-script /home/ec2-user/test/multiple.jds";
+        ConnectToEc2(command);
+    }
 
     public static void showthebill(String Start_date , String End_date) {
         ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
@@ -713,6 +725,133 @@ public class awsTest {
             e.printStackTrace();
         }
     }
+
+    public static void ready_for_condor_submit()
+    {
+        String user = "ec2-user";
+        String host = "13.58.106.251";
+        int port = 22;
+        String privateKeyPath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\Cloud_2016039082.pem";
+        String localFilePath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\count.txt"; // 로컬 파일 경로
+        String remoteFilePath = "/home/ec2-user/test/"; // EC2 내 파일 저장 경로
+
+        JSch jsch = new JSch();
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        try {
+            // SSH 세션 열기
+            jsch.addIdentity(privateKeyPath);
+            session = jsch.getSession(user, host, 22);
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            session.setConfig(config);
+            session.connect();
+
+            // SFTP 채널 열기
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            // 로컬 파일을 EC2로 전송
+            File localFile = new File(localFilePath);
+            String remoteFileName = localFile.getName();
+            channelSftp.put(new FileInputStream(localFile), remoteFilePath + "/" + remoteFileName);
+
+            System.out.println("파일 업로드 완료");
+
+            // EC2 내 파일을 쉘 스크립트로 변환
+            convertToShellScript(session, remoteFilePath, remoteFileName);
+
+        } catch (JSchException | SftpException | IOException e) {
+            System.err.println("파일 업로드 중 오류 발생: " + e.getMessage());
+        } finally {
+            // 연결 종료
+            if (channelSftp != null) {
+                channelSftp.exit();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+        }
+    }
+
+    // EC2 내 파일을 쉘 스크립트로 변환하는 메서드
+    public static void convertToShellScript(Session session, String remoteFilePath, String remoteFileName) {
+        try {
+            ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
+            String command = "cat " + remoteFilePath + "/" + remoteFileName + " > " + remoteFilePath + "/count.sh";
+            channelExec.setCommand(command);
+            channelExec.connect();
+            channelExec.disconnect();
+            System.out.println("파일을 쉘 스크립트로 변환 완료");
+        } catch (JSchException e) {
+            System.err.println("쉘 스크립트 변환 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    public static void ready_for_condor_submit2()
+    {
+        String user = "ec2-user";
+        String host = "13.58.106.251";
+        int port = 22;
+        String privateKeyPath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\Cloud_2016039082.pem";
+        String localFilePath = "C:\\Users\\tlsgy\\OneDrive\\바탕 화면\\학기 공부\\project\\cloud\\multiple.txt"; // 로컬 파일 경로
+        String remoteFilePath = "/home/ec2-user/test/"; // EC2 내 파일 저장 경로
+
+        JSch jsch = new JSch();
+        Session session = null;
+        ChannelSftp channelSftp = null;
+
+        try {
+            // SSH 세션 열기
+            jsch.addIdentity(privateKeyPath);
+            session = jsch.getSession(user, host, 22);
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            session.setConfig(config);
+            session.connect();
+
+            // SFTP 채널 열기
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            // 로컬 파일을 EC2로 전송
+            File localFile = new File(localFilePath);
+            String remoteFileName = localFile.getName();
+            channelSftp.put(new FileInputStream(localFile), remoteFilePath + "/" + remoteFileName);
+
+            System.out.println("파일 업로드 완료");
+
+            // EC2 내 파일을 .jds 파일로 변환
+            convertToJDS(session, remoteFilePath, remoteFileName);
+
+        } catch (JSchException | SftpException | IOException e) {
+            System.err.println("파일 업로드 중 오류 발생: " + e.getMessage());
+        } finally {
+            // 연결 종료
+            if (channelSftp != null) {
+                channelSftp.exit();
+            }
+            if (session != null) {
+                session.disconnect();
+            }
+        }
+    }
+
+    // EC2 내 파일을 .jds 파일로 변환하는 메서드
+    public static void convertToJDS(Session session, String remoteFilePath, String remoteFileName) {
+        try {
+            ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
+            String command = "mv " + remoteFilePath + "/" + remoteFileName + " " + remoteFilePath + "/multiple.jds";
+            channelExec.setCommand(command);
+            channelExec.connect();
+            channelExec.disconnect();
+            System.out.println("파일을 .jds로 변환 완료");
+        } catch (JSchException e) {
+            System.err.println(".jds 파일로 변환 중 오류 발생: " + e.getMessage());
+        }
+    }
+
 
 }
 
