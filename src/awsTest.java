@@ -70,6 +70,7 @@ public class awsTest {
             System.out.println("                                                            ");
             System.out.println("------------------------------------------------------------");
             System.out.println("           Amazon AWS Control Panel using SDK               ");
+            System.out.println("           ( 2016039082_ hyomin , Shin )                    ");
             System.out.println("------------------------------------------------------------");
             System.out.println("  1. list instance                2. available zones        ");
             System.out.println("  3. start instance               4. available regions      ");
@@ -258,7 +259,7 @@ public class awsTest {
 
                     if(!File_Path1.isBlank())
                     {
-                        System.out.println("Please enter the txt file path\n(This file will change to .jds File");
+                        System.out.println("\nPlease enter the txt file path\n(This file will change to .jds File)");
                         System.out.println("File Path: ");
                         String File_Path2="";
                         if(id_string.hasNext())
@@ -364,15 +365,14 @@ public class awsTest {
                                     "[AMI] %s, " +
                                     "[type] %s, " +
                                     "[state] %10s, " +
-                                    "[monitoring state] %s",
+                                    "[monitoring state] %s%n",
                             instance.getInstanceId(),
                             instance.getImageId(),
                             instance.getInstanceType(),
                             instance.getState().getName(),
                             instance.getMonitoring().getState());
                 }
-                // 줄바꿈으로 구분하여 다음 인스턴스 정보 출력
-                System.out.println();
+
             }
 
             // 페이징 처리를 위해 다음 페이지 토큰 설정
