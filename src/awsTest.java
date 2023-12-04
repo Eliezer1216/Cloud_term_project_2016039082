@@ -95,7 +95,7 @@ public class awsTest {
 
 
             String instance_id = "";
-
+            String jds_file_path="";
             switch(number) {
                 case 1:
                     listInstances();
@@ -240,7 +240,12 @@ public class awsTest {
                     }
                     break;
                 case 18:
-                    condor_submit();
+                    System.out.print("\nEnter jds File Path: ");
+                    if(id_string.hasNext())
+                        jds_file_path = id_string.nextLine();
+
+                    if(!jds_file_path.isBlank())
+                    condor_submit(jds_file_path);
                     break;
                 case 19:
                     condor_q();
@@ -625,9 +630,9 @@ public class awsTest {
         String command = "condor_q";
         ConnectToEc2(command);
     }
-    public static void condor_submit()
+    public static void condor_submit(String jds_file_path)
     {
-        String command="condor_submit -allow-crlf-script /home/ec2-user/multiple.jds";
+        String command="condor_submit -allow-crlf-script"+" "+jds_file_path;
         ConnectToEc2(command);
     }
 
@@ -841,8 +846,6 @@ public class awsTest {
             ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
             String command = "mv " + remoteFilePath + "/" + remoteFileName + " " + remoteFilePath + "/"+fileNameWithoutExtension2+".jds";
             channelExec.setCommand(command);
-         /*   String command2="dos2unix"+" " + remoteFilePath + "/"+fileNameWithoutExtension2+".jds";
-            channelExec.setCommand(command2);*/
             channelExec.connect();
             channelExec.disconnect();
             System.out.println("파일을 .jds로 변환 완료\n");
