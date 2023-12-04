@@ -276,6 +276,12 @@ public class awsTest {
                         }
                     }
                     break;
+                case 21:
+                    all_instances_start();
+                    break;
+                case 22:
+                    all_instances_stop();
+                    break;
                 case 23:
                     System.out.println("bye!");
                     menu.close();
@@ -901,5 +907,48 @@ public class awsTest {
         System.out.println("Created image ID: " + imageId);
     }
 
+    public static void all_instances_start()
+    {
+        final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+
+        // 중지된 인스턴스를 조회
+        DescribeInstancesRequest describeInstancesRequest = new DescribeInstancesRequest();
+        DescribeInstancesResult describeInstancesResult = ec2.describeInstances(describeInstancesRequest);
+
+        for (Reservation reservation : describeInstancesResult.getReservations()) {
+            for (Instance instance : reservation.getInstances()) {
+                if (InstanceStateName.Stopped.toString().equals(instance.getState().getName())) {
+                    // 중지된 인스턴스의 경우 시작
+                    StartInstancesRequest startInstancesRequest = new StartInstancesRequest().withInstanceIds(instance.getInstanceId());
+                    ec2.startInstances(startInstancesRequest);
+                    System.out.println("Starting instance: " + instance.getInstanceId());
+                } else {
+                    System.out.println("Instance " + instance.getInstanceId() + " is already running.");
+                }
+            }
+        }
+    }
+
+    public static void all_instances_stop()
+    {
+        final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+
+        // 실행 중인 모든 인스턴스 조회
+        DescribeInstancesRequest describeInstancesRequest = new DescribeInstancesRequest();
+        DescribeInstancesResult describeInstancesResult = ec2.describeInstances(describeInstancesRequest);
+
+        for (Reservation reservation : describeInstancesResult.getReservations()) {
+            for (Instance instance : reservation.getInstances()) {
+                if (InstanceStateName.Running.toString().equals(instance.getState().getName())) {
+                    // 실행 중인 인스턴스의 경우 중지
+                    StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(instance.getInstanceId());
+                    ec2.stopInstances(stopInstancesRequest);
+                    System.out.println("Stopping instance: " + instance.getInstanceId());
+                } else {
+                    System.out.println("Instance " + instance.getInstanceId() + " is already stopped or stopping.");
+                }
+            }
+        }
+    }
 }
 
