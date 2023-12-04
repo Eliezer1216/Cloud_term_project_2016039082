@@ -75,13 +75,14 @@ public class awsTest {
             System.out.println("  3. start instance               4. available regions      ");
             System.out.println("  5. stop instance                6. create instance        ");
             System.out.println("  7. reboot instance              8. list images            ");
-            System.out.println("  9. condor_status               99. quit                   ");
-            System.out.println("                                 10. terminate instance     ");
+            System.out.println("  9. condor_status               10. terminate instance     ");
             System.out.println(" 11. describe instance           12. start monitoring       ");
             System.out.println(" 13. stop monitoring             14. Find Running Instance  ");
-            System.out.println(" 15. show the bill               16. copy file to EC2       ");
-            System.out.println(" 17. ready for condor_submit     18.condor_submit           ");
-            System.out.println(" 19. condor_q                                               ");
+            System.out.println(" 15. show the bill               16. copy file to Master EC2");
+            System.out.println(" 17. ready for condor_submit     18. condor_submit          ");
+            System.out.println(" 19. condor_q                    20. create_image           ");
+            System.out.println(" 21. all_start_instances         22. all_stop_instances     ");
+            System.out.println("                                 23. quit                   ");
             System.out.println("------------------------------------------------------------");
 
             System.out.print("Enter an integer: ");
@@ -163,11 +164,6 @@ public class awsTest {
                 case 9:
                     condor_status();
                     break;
-                case 99:
-                    System.out.println("bye!");
-                    menu.close();
-                    id_string.close();
-                    return;
                 case 10:
                     listInstances();
                     System.out.print("Enter instance id: ");
@@ -250,6 +246,41 @@ public class awsTest {
                 case 19:
                     condor_q();
                     break;
+                case 20:
+                    System.out.print("\nEnter instance id: ");
+                    String instanceId = "";
+
+                    if(id_string.hasNext())
+                        instanceId = id_string.nextLine();
+
+                    if(!instanceId.isBlank())
+                    {
+                        System.out.print("\nEnter image description: ");
+                        String image_description="";
+                        if(id_string.hasNext())
+                        {
+                           image_description=id_string.nextLine();
+                        }
+                        if(!image_description.isBlank())
+                        {
+                            String image_name="";
+                            System.out.print("\nEnter image name: ");
+                            if(id_string.hasNext())
+                            {
+                                image_name=id_string.nextLine();
+                            }
+                            if(!image_name.isBlank())
+                            {
+                                createImage(instanceId,image_description,image_name );
+                            }
+                        }
+                    }
+                    break;
+                case 23:
+                    System.out.println("bye!");
+                    menu.close();
+                    id_string.close();
+                    return;
                 default: System.out.println("concentration!");
             }
 
@@ -853,5 +884,22 @@ public class awsTest {
             System.err.println(".jds 파일로 변환 중 오류 발생: " + e.getMessage());
         }
     }
+
+    public static void createImage(String instanceId , String imageDescription , String imageName)
+    {
+        final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+
+        CreateImageRequest createImageRequest = new CreateImageRequest()
+                .withInstanceId(instanceId)
+                .withName(imageName)
+                .withDescription(imageDescription)
+                .withNoReboot(true); // 인스턴스를 재부팅하지 않고 이미지 생성
+
+        CreateImageResult createImageResult = ec2.createImage(createImageRequest);
+        String imageId = createImageResult.getImageId();
+
+        System.out.println("Created image ID: " + imageId);
+    }
+
 }
 
